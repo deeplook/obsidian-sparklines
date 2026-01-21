@@ -1,0 +1,44 @@
+filter: |
+  file.folder = "Data" and file.name != "Tracker" and file.name != "Dashboard"
+columns:
+  - property: file.name
+    label: Day
+  - property: date
+    label: Date
+  - property: steps
+    label: Steps
+  - property: calories
+    label: Calories
+  - property: mood
+    label: Mood
+sort:
+  - property: date
+    order: asc
+properties:
+  date:
+    type: date
+  steps:
+    type: number
+  calories:
+    type: number
+  mood:
+    type: number
+views:
+  - type: table
+    name: Table
+    filters:
+      and:
+        - file.inFolder("Data")
+        - file.basename.startsWith("2025")
+    order:
+      - file.name
+      - steps
+      - mood
+      - calories
+      - date
+    sort:
+      - property: date
+        direction: DESC
+    columnSize:
+      file.name: 141
+      note.calories: 107

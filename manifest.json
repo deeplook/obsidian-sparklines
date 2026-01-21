@@ -1,0 +1,10 @@
+{
+  "id": "sparklines",
+  "name": "Sparklines",
+  "version": "1.0.0",
+  "minAppVersion": "0.15.0",
+    "description": "Render inline sparklines, converting code blocks to SVG.",
+  "author": "Dinu Gherman",
+  "authorUrl": "",
+  "isDesktopOnly": false
+}
