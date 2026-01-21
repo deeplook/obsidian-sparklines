@@ -25,6 +25,7 @@ npm run build
 2. Copy the following files to your Obsidian vault's plugins folder:
    - `main.js`
    - `manifest.json`
+   - `styles.css`
 
 ```bash
 # Example: copy to your vault
@@ -93,5 +94,4 @@ Use comma-separated numbers as text - this displays correctly in Obsidian's Prop
 | Frontmatter (explicit) | `[@frontmatter:key]`    | Supported |
 | Bases                  | `[@bases:Table:column]` | Supported |
 | Dataview               | `[@dataview:query]`     | Planned   |
-
 These render as inline SVG graphics that scale with your text. The example vault in the repository contains many examples for sparklines inside notes with different contexts, that show numeric values from literals, frontmatter properties or bases files.
