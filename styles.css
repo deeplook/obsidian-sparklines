@@ -1,0 +1,11 @@
+/* Sparkline plugin styles */
+
+.sparkline svg {
+  height: 2.0ex;
+  vertical-align: middle;
+  margin: 0 0.3em;
+}
+
+.sparkline--accent {
+  color: var(--interactive-accent);
+}

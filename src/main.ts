@@ -64,9 +64,6 @@ function createSparklineSvgElement(
   svg.setAttribute("viewBox", `0 0 ${width} ${viewHeight}`);
   svg.setAttribute("width", String(width));
   svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
-  svg.style.height = "2.0ex";
-  svg.style.verticalAlign = "middle";
-  svg.style.margin = "0 0.3em";
 
   if (numbers.length === 0) {
     return svg;
@@ -446,7 +443,7 @@ async function resolveBasesReference(
   );
 
   if (!baseFile) {
-    console.log(`Sparkline: Base file "${baseFileName}" not found`);
+    console.warn(`Sparkline: Base file "${baseFileName}" not found`);
     return null;
   }
 
@@ -454,7 +451,7 @@ async function resolveBasesReference(
   const content = await app.vault.read(baseFile);
   const baseDef = parseBaseFile(content);
   if (!baseDef) {
-    console.log(`Sparkline: Failed to parse base file "${baseFileName}"`);
+    console.warn(`Sparkline: Failed to parse base file "${baseFileName}"`);
     return null;
   }
 
@@ -467,10 +464,6 @@ async function resolveBasesReference(
     if (file.extension !== "md") continue;
 
     const fileName = file.name.replace(/\.md$/, "");
-    const folderPath = file.path.substring(
-      0,
-      file.path.length - file.name.length - 1
-    );
 
     if (!evaluateFilter(baseDef.filter, file.path, file.name)) {
       continue;
@@ -509,7 +502,7 @@ async function resolveBasesReference(
   }
 
   if (matchingData.length === 0) {
-    console.log(`Sparkline: No matching data found for base "${baseName}"`);
+    console.warn(`Sparkline: No matching data found for base "${baseName}"`);
     return null;
   }
 
@@ -598,7 +591,7 @@ function resolveDataReference(
     }
 
     // Trigger async load
-    loadBasesData(data.baseName, data.column, app, onBasesLoad);
+    void loadBasesData(data.baseName, data.column, app, onBasesLoad);
     return null;
   }
 
@@ -629,7 +622,7 @@ function resolveDataReference(
 
   // Unknown source
   if (data.type === "reference") {
-    console.log(`Sparkline: Unknown data source "${data.source}"`);
+    console.warn(`Sparkline: Unknown data source "${data.source}"`);
   }
   return null;
 }
@@ -679,10 +672,7 @@ class SparklineWidget extends WidgetType {
 
   toDOM(): HTMLElement {
     const span = document.createElement("span");
-    span.className = "sparkline";
-    if (this.useAccentColor) {
-      span.style.color = "var(--interactive-accent)";
-    }
+    span.className = this.useAccentColor ? "sparkline sparkline--accent" : "sparkline";
     const svg = createSparklineSvgElement(this.numbers, this.options);
     span.appendChild(svg);
     return span;
@@ -829,8 +819,7 @@ function clearBasesCache(): void {
 }
 
 export default class SparklinePlugin extends Plugin {
-  async onload(): Promise<void> {
-    console.log("Sparkline Inline plugin loaded");
+  onload(): void {
 
     // Register markdown post processor for Reading mode
     this.registerMarkdownPostProcessor(
@@ -854,7 +843,7 @@ export default class SparklinePlugin extends Plugin {
     );
 
     // Show a notice to confirm plugin is loaded (can be removed later)
-    new Notice("Sparkline Inline plugin loaded!");
+    new Notice("Sparkline plugin loaded");
   }
 
   /**
@@ -872,11 +861,8 @@ export default class SparklinePlugin extends Plugin {
 
       // Create placeholder span that will be updated when data loads
       const span = document.createElement("span");
-      span.className = "sparkline";
       const useAccentColor = !parsed.options.color;
-      if (useAccentColor) {
-        span.style.color = "var(--interactive-accent)";
-      }
+      span.className = useAccentColor ? "sparkline sparkline--accent" : "sparkline";
 
       // Callback to render sparkline when data is available
       const renderSparkline = () => {
@@ -907,6 +893,6 @@ export default class SparklinePlugin extends Plugin {
   }
 
   onunload(): void {
-    console.log("Sparkline Inline plugin unloaded");
+    // Plugin cleanup if needed
   }
 }

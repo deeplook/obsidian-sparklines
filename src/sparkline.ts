@@ -147,7 +147,7 @@ function main(): void {
   const args = process.argv.slice(2);
 
   if (args.length === 0 || args.includes("--help") || args.includes("-h")) {
-    console.log(`Usage: npx ts-node sparkline.ts <numbers...> [options]
+    process.stdout.write(`Usage: npx ts-node sparkline.ts <numbers...> [options]
 
 Generate an SVG sparkline for the given numbers.
 
@@ -162,7 +162,8 @@ Options:
 
 Examples:
   npx ts-node sparkline.ts 1 2 3 4 5
-  npx ts-node sparkline.ts 1 2 3 4 5 --width 200 --color blue --line-width 2.0`);
+  npx ts-node sparkline.ts 1 2 3 4 5 --width 200 --color blue --line-width 2.0
+`);
     return;
   }
 
@@ -174,7 +175,7 @@ Examples:
   }
 
   const svg = sparkline(numbers, { width, color, lineWidth });
-  console.log(svg);
+  process.stdout.write(svg + "\n");
 }
 
 // Only run CLI when executed directly (not when imported)
