@@ -15,6 +15,8 @@ This is an [Obsidian](https://obsidian.md) plugin to render inline [sparklines](
 
 ### Installation
 
+This plugin has been [subitted](https://github.com/obsidianmd/obsidian-releases/pull/9694) as a community plugin, the review is pending. Until accepted you need to install it manually as described below.
+
 1. Install dependencies and build the plugin:
 
 ```bash
@@ -29,7 +31,7 @@ npm run build
 
 ```bash
 # Example: copy to your vault
-cp main.js manifest.json /path/to/your/vault/.obsidian/plugins/sparkline/
+cp main.js manifest.json styles.css /path/to/your/vault/.obsidian/plugins/sparkline/
 ```
 
 3. Enable the plugin in Obsidian: Settings > Community plugins > Sparkline Inline
