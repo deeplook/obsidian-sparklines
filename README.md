@@ -15,7 +15,7 @@ This is an [Obsidian](https://obsidian.md) plugin to render inline [sparklines](
 
 ### Installation
 
-This plugin has been [subitted](https://github.com/obsidianmd/obsidian-releases/pull/9694) as a community plugin, the review is pending. Until accepted you need to install it manually as described below.
+This plugin has been [submitted](https://github.com/obsidianmd/obsidian-releases/pull/9694) as a community plugin, the review is pending. Until accepted you need to install it manually as described below.
 
 1. Install dependencies and build the plugin:
 
