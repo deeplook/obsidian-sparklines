@@ -12,6 +12,9 @@ export interface SparklineOptions {
   lineWidth?: number;
   viewHeight?: number;
   padding?: number;
+  lineCap?: "butt" | "round" | "square";
+  lineJoin?: "miter" | "round" | "bevel";
+  dashArray?: string;
 }
 
 /**

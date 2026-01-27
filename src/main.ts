@@ -58,6 +58,9 @@ function createSparklineSvgElement(
     lineWidth = 1.0,
     viewHeight = 20,
     padding = 2.0,
+    lineCap = "round",
+    lineJoin = "round",
+    dashArray,
   } = options;
 
   const svg = document.createElementNS(SVG_NS, "svg");
@@ -107,8 +110,11 @@ function createSparklineSvgElement(
   path.setAttribute("fill", "none");
   path.setAttribute("stroke", color);
   path.setAttribute("stroke-width", String(lineWidth));
-  path.setAttribute("stroke-linecap", "round");
-  path.setAttribute("stroke-linejoin", "round");
+  path.setAttribute("stroke-linecap", lineCap);
+  path.setAttribute("stroke-linejoin", lineJoin);
+  if (dashArray) {
+    path.setAttribute("stroke-dasharray", dashArray);
+  }
 
   svg.appendChild(path);
 
@@ -174,7 +180,9 @@ function parseSparklineBlock(text: string): ParsedSparkline | null {
   const optionsContent = match[2].trim();
 
   // Check if it's a bases reference: [@bases:BaseName:column]
-  const basesMatch = dataContent.match(/^@bases:(.+):([a-z_][a-z0-9_]*)$/i);
+  // Use [^:]+ for base name to avoid greedy matching issues with dots/underscores
+  // Allow dots, hyphens, underscores in column names for properties like file.name, mood-score
+  const basesMatch = dataContent.match(/^@bases:([^:]+):([a-z_][a-z0-9_.-]*)$/i);
   if (basesMatch) {
     const baseName = basesMatch[1].trim();
     const column = basesMatch[2];
@@ -654,6 +662,24 @@ function setOption(
       break;
     case "padding":
       options.padding = parseFloat(value);
+      break;
+    case "cap":
+    case "linecap":
+    case "line-cap":
+    case "stroke-linecap":
+      options.lineCap = value as "butt" | "round" | "square";
+      break;
+    case "join":
+    case "linejoin":
+    case "line-join":
+    case "stroke-linejoin":
+      options.lineJoin = value as "miter" | "round" | "bevel";
+      break;
+    case "dash":
+    case "dasharray":
+    case "dash-array":
+    case "stroke-dasharray":
+      options.dashArray = value;
       break;
   }
 }

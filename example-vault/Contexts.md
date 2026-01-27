@@ -61,6 +61,8 @@ Regular paragraph with sparkline: `sparkline: [1 2 3 4 5] color="red"` and more 
 | Row 1 | `sparkline: [1 2 3 4 5] color="red"` | Test |
 | Row 2 | `sparkline: [5 4 3 2 1] color="blue"` | Test |
 | Row 3 | `sparkline: [1 3 2 5 4] color="green"` | Test |
+| Dashed | `sparkline: [1 2 3 4 5] dash="4,2" color="purple"` | Test |
+| Square caps | `sparkline: [1 2 3 4 5] cap=square line-width=2` | Test |
 
 ---
 
@@ -124,3 +126,5 @@ Text after comment with `sparkline: [1 2 3 4 5] color="red"` visible sparkline.
 Copy this file to your Obsidian vault to test all contexts. Check both:
 1. **Live Preview mode** (editing)
 2. **Reading mode** (preview)
+
+See also: [[Strokes]] for line cap, join, and dash pattern options.

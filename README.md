@@ -57,6 +57,11 @@ Use inline code blocks with the following syntax:
 | `line-width=<n>` | Line thickness | 1.0 |
 | `view-height=<n>` | ViewBox height | 20 |
 | `padding=<n>` | Vertical padding | 2.0 |
+| `cap=<value>` | Line cap style: `butt`, `round`, `square` | round |
+| `join=<value>` | Line join style: `miter`, `round`, `bevel` | round |
+| `dash="<pattern>"` | Dash pattern (e.g., `"5,3"`) | solid line |
+
+The stroke options also accept SVG attribute names: `linecap`, `line-cap`, `stroke-linecap`, `linejoin`, `line-join`, `stroke-linejoin`, `dasharray`, `dash-array`, `stroke-dasharray`.
 
 The default color uses Obsidian's accent color (`--interactive-accent`), which matches your theme settings.
 
@@ -71,6 +76,10 @@ Stock prices: `sparkline: [100 95 102 98 110] color="green" width=150`
 Temperature data: `sparkline: [72, 75, 71, 68, 70] color="blue" line-width=2`
 
 Activity graph: `sparkline: [3 1 4 1 5 9 2 6] color="#ff6600" width=200`
+
+Dashed line: `sparkline: [1 2 3 4 5] dash="5,3"`
+
+Square caps: `sparkline: [1 2 3 4 5] cap=square join=bevel`
 ```
 
 **Dynamic data from frontmatter:**

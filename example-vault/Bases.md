@@ -55,5 +55,8 @@ Data/
 	2025-01-18.md
 	2025-01-19.md
 Bases.md            # This file
+Contexts.md         # Sparklines in various contexts
+Properties.md       # Frontmatter data examples
+Strokes.md          # Line cap, join, dash options
 Tracker.base        # Bases definition
 ```
