@@ -7,6 +7,7 @@
 [![Downloads](https://img.shields.io/github/downloads/deeplook/obsidian-sparklines/total?label=Downloads&logo=github)](https://github.com/deeplook/obsidian-sparklines/releases)
 [![Installs](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugin-stats.json&query=$['sparklines'].downloads&label=Installs&style=flat&logo=obsidian&color=7C3AED)](https://obsidian.md/plugins?id=sparklines)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178c6?style=flat)](https://www.typescriptlang.org/)
+[![See also](https://img.shields.io/badge/See%20also-Obsidian–Asciinema–Player-1f425f.svg)](https://github.com/deeplook/obsidian-asciinema-player)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=flat&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/deeplook)
 
 ![Examples image](example-sparklines.png)
