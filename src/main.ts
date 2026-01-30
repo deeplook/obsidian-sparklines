@@ -15,14 +15,14 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 /**
  * Cache for bases data to enable synchronous access
  */
-const basesDataCache: Map<string, number[] | null> = new Map();
+const basesDataCache: Map<string, Array<number | null> | null> = new Map();
 const basesPendingLoads: Set<string> = new Set();
 
 /**
  * Data source types for sparkline data
  */
 type DataSource =
-  | { type: "literal"; numbers: number[] }
+  | { type: "literal"; numbers: Array<number | null> }
   | { type: "reference"; source: string; key: string }
   | { type: "bases"; baseName: string; column: string };
 
@@ -47,9 +47,10 @@ interface ParsedSparkline {
 
 /**
  * Create an SVG sparkline element using DOM API (no innerHTML)
+ * Supports null values for gaps in the line
  */
 function createSparklineSvgElement(
-  numbers: number[],
+  numbers: Array<number | null>,
   options: SparklineOptions = {}
 ): SVGSVGElement {
   const {
@@ -68,42 +69,80 @@ function createSparklineSvgElement(
   svg.setAttribute("width", String(width));
   svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
-  if (numbers.length === 0) {
+  // Filter out nulls for min/max calculation and check if we have any valid data
+  const validNumbers = numbers.filter((n): n is number => n !== null);
+
+  if (validNumbers.length === 0) {
     return svg;
   }
 
-  // Duplicate single value for a visible (flat) line
-  let data = numbers;
-  if (data.length === 1) {
-    data = [data[0], data[0]];
-  }
-
-  const minVal = Math.min(...data);
-  const maxVal = Math.max(...data);
+  const minVal = Math.min(...validNumbers);
+  const maxVal = Math.max(...validNumbers);
   const valueRange = maxVal - minVal;
   const plotHeight = viewHeight - 2 * padding;
 
-  let pathData: string;
+  // Calculate coordinates for all positions (including nulls)
+  // For single value, place it in the middle
+  const xCoords = numbers.map((_, i) =>
+    numbers.length === 1 ? width / 2 : (i * width) / (numbers.length - 1)
+  );
 
-  if (valueRange === 0) {
-    const yMid = viewHeight / 2;
-    pathData = `M 0 ${yMid.toFixed(1)} L ${width} ${yMid.toFixed(1)}`;
-  } else {
-    const scaled = data.map(
-      (val) => ((val - minVal) / valueRange) * plotHeight + padding
-    );
-    const xCoords = data.map((_, i) => (i * width) / (data.length - 1));
-
-    const commands = [
-      `M ${xCoords[0].toFixed(1)} ${(viewHeight - scaled[0]).toFixed(1)}`,
-    ];
-    for (let i = 1; i < data.length; i++) {
-      commands.push(
-        `L ${xCoords[i].toFixed(1)} ${(viewHeight - scaled[i]).toFixed(1)}`
-      );
+  // Helper to scale a value to y-coordinate
+  const scaleY = (val: number): number => {
+    if (valueRange === 0) {
+      return viewHeight / 2;
     }
-    pathData = commands.join(" ");
+    return viewHeight - (((val - minVal) / valueRange) * plotHeight + padding);
+  };
+
+  // Build path data with M commands for each segment
+  const commands: string[] = [];
+  let inSegment = false;
+
+  for (let i = 0; i < numbers.length; i++) {
+    const val = numbers[i];
+    if (val === null) {
+      inSegment = false;
+      continue;
+    }
+
+    const x = xCoords[i];
+    const y = scaleY(val);
+
+    if (!inSegment) {
+      // Start a new segment with M command
+      commands.push(`M ${x.toFixed(1)} ${y.toFixed(1)}`);
+      inSegment = true;
+    } else {
+      // Continue segment with L command
+      commands.push(`L ${x.toFixed(1)} ${y.toFixed(1)}`);
+    }
   }
+
+  // Track which points are part of line segments vs isolated
+  const pointInLine = new Set<number>();
+  let lastMIndex = -1;
+
+  for (let i = 0; i < commands.length; i++) {
+    const cmd = commands[i];
+    if (cmd.startsWith('M')) {
+      lastMIndex = i;
+    } else if (cmd.startsWith('L') && lastMIndex >= 0) {
+      // This L command connects the point at lastMIndex to this point
+      pointInLine.add(lastMIndex);
+      pointInLine.add(i);
+      lastMIndex = i;
+    }
+  }
+
+  // If we only have single points (no lines), render them as small circles
+  const hasLines = commands.some(cmd => cmd.startsWith('L'));
+
+  if (commands.length === 0) {
+    return svg;
+  }
+
+  const pathData = commands.join(" ");
 
   const path = document.createElementNS(SVG_NS, "path");
   path.setAttribute("d", pathData);
@@ -117,6 +156,38 @@ function createSparklineSvgElement(
   }
 
   svg.appendChild(path);
+
+  // Add circles for isolated points (not part of any line segment)
+  // or for all points if there are no lines at all
+  const radius = Math.max(1.5, lineWidth);
+  let cmdIndex = 0;
+  for (let i = 0; i < numbers.length; i++) {
+    const val = numbers[i];
+    if (val === null) continue;
+
+    // Check if this point is isolated (not part of a line segment)
+    const isIsolated = !hasLines || !pointInLine.has(cmdIndex);
+
+    if (isIsolated) {
+      let x = xCoords[i];
+      let y = scaleY(val);
+
+      // Clamp coordinates to keep circles fully visible within viewBox
+      // Add small margin to prevent touching the very edge
+      const margin = 0.5;
+      x = Math.max(radius + margin, Math.min(width - radius - margin, x));
+      y = Math.max(radius + margin, Math.min(viewHeight - radius - margin, y));
+
+      const circle = document.createElementNS(SVG_NS, "circle");
+      circle.setAttribute("cx", x.toFixed(1));
+      circle.setAttribute("cy", y.toFixed(1));
+      circle.setAttribute("r", String(radius));
+      circle.setAttribute("fill", color);
+      svg.appendChild(circle);
+    }
+
+    cmdIndex++;
+  }
 
   return svg;
 }
@@ -145,17 +216,29 @@ function parseOptions(optionsContent: string): SparklineOptions {
 
 /**
  * Parse numbers from a string (space or comma separated)
+ * Supports null/none/nil/undefined as gap markers
  */
-function parseNumbers(content: string): number[] {
-  const numbers: number[] = [];
-  const numberRegex = /[+-]?\d+(?:\.\d+)?/g;
-  let numMatch;
-  while ((numMatch = numberRegex.exec(content)) !== null) {
-    const num = parseFloat(numMatch[0]);
-    if (!isNaN(num)) {
-      numbers.push(num);
+function parseNumbers(content: string): Array<number | null> {
+  const numbers: Array<number | null> = [];
+  // Split by comma or whitespace, but keep delimiters to detect null markers
+  const tokens = content.split(/([,\s]+)/);
+
+  for (const token of tokens) {
+    const trimmed = token.trim();
+    if (trimmed === '' || trimmed === ',') continue;
+
+    // Check for null markers (case insensitive)
+    if (/^(null|none|nil|undefined|na|n\/a)$/i.test(trimmed)) {
+      numbers.push(null);
+    } else {
+      // Try to parse as number
+      const num = parseFloat(trimmed);
+      if (!isNaN(num)) {
+        numbers.push(num);
+      }
     }
   }
+
   return numbers;
 }
 
@@ -170,8 +253,8 @@ function parseNumbers(content: string): number[] {
  * @returns Parsed sparkline data or null if not a valid sparkline block
  */
 function parseSparklineBlock(text: string): ParsedSparkline | null {
-  // Match sparkline: [data] options pattern
-  const match = text.match(/^sparkline:\s*\[([^\]]+)\]\s*(.*)$/i);
+  // Match sparkline: [data] options pattern - data can be empty
+  const match = text.match(/^sparkline:\s*\[([^\]]*)\]\s*(.*)$/i);
   if (!match) {
     return null;
   }
@@ -205,9 +288,7 @@ function parseSparklineBlock(text: string): ParsedSparkline | null {
 
   // Otherwise parse as literal numbers
   const numbers = parseNumbers(dataContent);
-  if (numbers.length === 0) {
-    return null;
-  }
+  // Allow empty arrays to be parsed (will render as empty SVG)
 
   return {
     data: { type: "literal", numbers },
@@ -442,7 +523,7 @@ async function resolveBasesReference(
   baseName: string,
   column: string,
   app: App
-): Promise<number[] | null> {
+): Promise<Array<number | null> | null> {
   // Find the .base file
   const baseFileName = `${baseName}.base`;
   const allFiles = app.vault.getFiles();
@@ -584,7 +665,7 @@ function resolveDataReference(
   app: App,
   filePath: string,
   onBasesLoad?: () => void
-): number[] | null {
+): Array<number | null> | null {
   if (data.type === "literal") {
     return data.numbers;
   }
@@ -611,11 +692,22 @@ function resolveDataReference(
     const cache = app.metadataCache.getFileCache(file);
     const value = cache?.frontmatter?.[data.key];
 
-    // Handle array values
+    // Handle array values - preserve nulls for gaps
     if (Array.isArray(value)) {
-      const numbers = value
-        .map((v) => (typeof v === "number" ? v : parseFloat(v)))
-        .filter((v) => !isNaN(v));
+      const numbers: Array<number | null> = value
+        .map((v) => {
+          if (v === null || v === undefined) return null;
+          if (typeof v === "number") return v;
+          if (typeof v === "string") {
+            // Check for null markers
+            if (/^(null|none|nil|undefined|na|n\/a)$/i.test(v.trim())) {
+              return null;
+            }
+            const parsed = parseFloat(v);
+            return isNaN(parsed) ? null : parsed;
+          }
+          return null;
+        });
       return numbers.length > 0 ? numbers : null;
     }
 
@@ -689,7 +781,7 @@ function setOption(
  */
 class SparklineWidget extends WidgetType {
   constructor(
-    private numbers: number[],
+    private numbers: Array<number | null>,
     private options: SparklineOptions,
     private useAccentColor: boolean
   ) {
@@ -737,7 +829,7 @@ function buildDecorations(
   const filePath = activeFile?.path || "";
 
   syntaxTree(view.state).iterate({
-    enter(node) {
+    enter(node: { name: string; from: number; to: number }) {
       const nodeName = node.name.toLowerCase();
       if (
         nodeName.includes("code") &&
@@ -762,7 +854,8 @@ function buildDecorations(
             filePath,
             onBasesLoad
           );
-          if (numbers && numbers.length > 0) {
+          // Render if we have numbers (even if all null - will show empty SVG)
+          if (numbers !== null) {
             const useAccentColor = !parsed.options.color;
             decorations.push({
               from,
@@ -893,7 +986,7 @@ export default class SparklinePlugin extends Plugin {
       // Callback to render sparkline when data is available
       const renderSparkline = () => {
         const numbers = resolveDataReference(parsed.data, this.app, sourcePath);
-        if (!numbers || numbers.length === 0) return;
+        if (numbers === null) return;
 
         // Clear and re-render
         span.innerHTML = "";
@@ -909,7 +1002,7 @@ export default class SparklinePlugin extends Plugin {
         renderSparkline
       );
 
-      if (numbers && numbers.length > 0) {
+      if (numbers !== null) {
         const svg = createSparklineSvgElement(numbers, parsed.options);
         span.appendChild(svg);
       }
