@@ -480,12 +480,19 @@ async function resolveBasesReference(
     if (!frontmatter) continue;
 
     // Extract the column value
-    const colValue = frontmatter[column];
+    const colValue: unknown = frontmatter[column];
 
     // Handle null/undefined values as gaps
     let numValue: number | null = null;
     if (colValue !== undefined && colValue !== null) {
-      const parsed = typeof colValue === "number" ? colValue : parseFloat(colValue);
+      let parsed: number;
+      if (typeof colValue === "number") {
+        parsed = colValue;
+      } else if (typeof colValue === "string") {
+        parsed = parseFloat(colValue);
+      } else {
+        continue; // Skip non-numeric, non-string values
+      }
       if (!isNaN(parsed)) {
         numValue = parsed;
       }
@@ -612,7 +619,7 @@ function resolveDataReference(
     if (!(file instanceof TFile)) return null;
 
     const cache = app.metadataCache.getFileCache(file);
-    const value = cache?.frontmatter?.[data.key];
+    const value: unknown = cache?.frontmatter?.[data.key];
 
     // Handle array values - preserve nulls for gaps
     if (Array.isArray(value)) {
