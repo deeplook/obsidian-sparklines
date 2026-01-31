@@ -1,5 +1,5 @@
 import { App, Plugin, MarkdownPostProcessorContext, Notice, TFile } from "obsidian";
-import { SparklineOptions } from "./sparkline";
+import { SparklineOptions, generateSparklinePathData, setOption } from "./sparkline";
 import {
   ViewPlugin,
   ViewUpdate,
@@ -58,7 +58,6 @@ function createSparklineSvgElement(
     color = "currentColor",
     lineWidth = 1.0,
     viewHeight = 20,
-    padding = 2.0,
     lineCap = "round",
     lineJoin = "round",
     dashArray,
@@ -69,124 +68,41 @@ function createSparklineSvgElement(
   svg.setAttribute("width", String(width));
   svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
-  // Filter out nulls for min/max calculation and check if we have any valid data
-  const validNumbers = numbers.filter((n): n is number => n !== null);
-
-  if (validNumbers.length === 0) {
-    return svg;
-  }
-
-  const minVal = Math.min(...validNumbers);
-  const maxVal = Math.max(...validNumbers);
-  const valueRange = maxVal - minVal;
-  const plotHeight = viewHeight - 2 * padding;
-
-  // Calculate coordinates for all positions (including nulls)
-  // For single value, place it in the middle
-  const xCoords = numbers.map((_, i) =>
-    numbers.length === 1 ? width / 2 : (i * width) / (numbers.length - 1)
+  // Generate path data using the shared algorithm
+  const { pathData, isolatedPoints, hasLines } = generateSparklinePathData(
+    numbers,
+    options
   );
 
-  // Helper to scale a value to y-coordinate
-  const scaleY = (val: number): number => {
-    if (valueRange === 0) {
-      return viewHeight / 2;
-    }
-    return viewHeight - (((val - minVal) / valueRange) * plotHeight + padding);
-  };
-
-  // Build path data with M commands for each segment
-  const commands: string[] = [];
-  let inSegment = false;
-
-  for (let i = 0; i < numbers.length; i++) {
-    const val = numbers[i];
-    if (val === null) {
-      inSegment = false;
-      continue;
-    }
-
-    const x = xCoords[i];
-    const y = scaleY(val);
-
-    if (!inSegment) {
-      // Start a new segment with M command
-      commands.push(`M ${x.toFixed(1)} ${y.toFixed(1)}`);
-      inSegment = true;
-    } else {
-      // Continue segment with L command
-      commands.push(`L ${x.toFixed(1)} ${y.toFixed(1)}`);
-    }
-  }
-
-  // Track which points are part of line segments vs isolated
-  const pointInLine = new Set<number>();
-  let lastMIndex = -1;
-
-  for (let i = 0; i < commands.length; i++) {
-    const cmd = commands[i];
-    if (cmd.startsWith('M')) {
-      lastMIndex = i;
-    } else if (cmd.startsWith('L') && lastMIndex >= 0) {
-      // This L command connects the point at lastMIndex to this point
-      pointInLine.add(lastMIndex);
-      pointInLine.add(i);
-      lastMIndex = i;
-    }
-  }
-
-  // If we only have single points (no lines), render them as small circles
-  const hasLines = commands.some(cmd => cmd.startsWith('L'));
-
-  if (commands.length === 0) {
+  // If no valid data, return empty SVG
+  if (!pathData && isolatedPoints.length === 0) {
     return svg;
   }
 
-  const pathData = commands.join(" ");
-
-  const path = document.createElementNS(SVG_NS, "path");
-  path.setAttribute("d", pathData);
-  path.setAttribute("fill", "none");
-  path.setAttribute("stroke", color);
-  path.setAttribute("stroke-width", String(lineWidth));
-  path.setAttribute("stroke-linecap", lineCap);
-  path.setAttribute("stroke-linejoin", lineJoin);
-  if (dashArray) {
-    path.setAttribute("stroke-dasharray", dashArray);
+  // Create path element if we have line data
+  if (pathData || hasLines) {
+    const path = document.createElementNS(SVG_NS, "path");
+    path.setAttribute("d", pathData);
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", color);
+    path.setAttribute("stroke-width", String(lineWidth));
+    path.setAttribute("stroke-linecap", lineCap);
+    path.setAttribute("stroke-linejoin", lineJoin);
+    if (dashArray) {
+      path.setAttribute("stroke-dasharray", dashArray);
+    }
+    svg.appendChild(path);
   }
 
-  svg.appendChild(path);
-
-  // Add circles for isolated points (not part of any line segment)
-  // or for all points if there are no lines at all
+  // Add circles for isolated points
   const radius = Math.max(1.5, lineWidth);
-  let cmdIndex = 0;
-  for (let i = 0; i < numbers.length; i++) {
-    const val = numbers[i];
-    if (val === null) continue;
-
-    // Check if this point is isolated (not part of a line segment)
-    const isIsolated = !hasLines || !pointInLine.has(cmdIndex);
-
-    if (isIsolated) {
-      let x = xCoords[i];
-      let y = scaleY(val);
-
-      // Clamp coordinates to keep circles fully visible within viewBox
-      // Add small margin to prevent touching the very edge
-      const margin = 0.5;
-      x = Math.max(radius + margin, Math.min(width - radius - margin, x));
-      y = Math.max(radius + margin, Math.min(viewHeight - radius - margin, y));
-
-      const circle = document.createElementNS(SVG_NS, "circle");
-      circle.setAttribute("cx", x.toFixed(1));
-      circle.setAttribute("cy", y.toFixed(1));
-      circle.setAttribute("r", String(radius));
-      circle.setAttribute("fill", color);
-      svg.appendChild(circle);
-    }
-
-    cmdIndex++;
+  for (const point of isolatedPoints) {
+    const circle = document.createElementNS(SVG_NS, "circle");
+    circle.setAttribute("cx", point.x.toFixed(1));
+    circle.setAttribute("cy", point.y.toFixed(1));
+    circle.setAttribute("r", String(radius));
+    circle.setAttribute("fill", color);
+    svg.appendChild(circle);
   }
 
   return svg;
@@ -546,8 +462,9 @@ async function resolveBasesReference(
 
   // Determine effective sort - prioritize views sort, then top-level sort
   const effectiveSort = baseDef.viewsSort.length > 0 ? baseDef.viewsSort : baseDef.sort;
+  console.log("Sparkline: effectiveSort =", JSON.stringify(effectiveSort));
   // Find files matching the filter
-  const matchingData: Array<{ sortValues: unknown[]; value: number; fileName: string }> = [];
+  const matchingData: Array<{ sortValues: unknown[]; value: number | null; fileName: string }> = [];
 
   for (const file of allFiles) {
     if (file.extension !== "md") continue;
@@ -565,11 +482,15 @@ async function resolveBasesReference(
 
     // Extract the column value
     const colValue = frontmatter[column];
-    if (colValue === undefined || colValue === null) continue;
 
-    const numValue =
-      typeof colValue === "number" ? colValue : parseFloat(colValue);
-    if (isNaN(numValue)) continue;
+    // Handle null/undefined values as gaps
+    let numValue: number | null = null;
+    if (colValue !== undefined && colValue !== null) {
+      const parsed = typeof colValue === "number" ? colValue : parseFloat(colValue);
+      if (!isNaN(parsed)) {
+        numValue = parsed;
+      }
+    }
 
     // Get sort values for all sort fields
     const sortValues: unknown[] = [];
@@ -588,7 +509,10 @@ async function resolveBasesReference(
     }
 
     matchingData.push({ sortValues, value: numValue, fileName });
+    console.log(`Sparkline: Added file ${fileName}, value: ${numValue}, sortValues:`, sortValues);
   }
+
+  console.log("Sparkline: matchingData before sort:", matchingData.map(d => ({ file: d.fileName, value: d.value })));
 
   if (matchingData.length === 0) {
     console.warn(`Sparkline: No matching data found for base "${baseName}"`);
@@ -620,7 +544,9 @@ async function resolveBasesReference(
     return a.fileName.localeCompare(b.fileName);
   });
 
-  return matchingData.map((d) => d.value);
+  const result = matchingData.map((d) => d.value);
+  console.log("Sparkline: Final result:", result);
+  return result;
 }
 
 /**
@@ -727,54 +653,7 @@ function resolveDataReference(
   return null;
 }
 
-/**
- * Set option value, handling type conversion
- */
-function setOption(
-  options: SparklineOptions,
-  key: string,
-  value: string
-): void {
-  const normalizedKey = key.toLowerCase();
-
-  switch (normalizedKey) {
-    case "color":
-      options.color = value;
-      break;
-    case "width":
-      options.width = parseInt(value, 10);
-      break;
-    case "line-width":
-    case "linewidth":
-      options.lineWidth = parseFloat(value);
-      break;
-    case "view-height":
-    case "viewheight":
-      options.viewHeight = parseInt(value, 10);
-      break;
-    case "padding":
-      options.padding = parseFloat(value);
-      break;
-    case "cap":
-    case "linecap":
-    case "line-cap":
-    case "stroke-linecap":
-      options.lineCap = value as "butt" | "round" | "square";
-      break;
-    case "join":
-    case "linejoin":
-    case "line-join":
-    case "stroke-linejoin":
-      options.lineJoin = value as "miter" | "round" | "bevel";
-      break;
-    case "dash":
-    case "dasharray":
-    case "dash-array":
-    case "stroke-dasharray":
-      options.dashArray = value;
-      break;
-  }
-}
+// setOption is now imported from ./sparkline to avoid duplication
 
 /**
  * Widget to render sparkline SVG in Live Preview mode

@@ -13,7 +13,7 @@
 
 ![Examples image](example-sparklines.png)
 
-This is an [Obsidian](https://obsidian.md) plugin to render inline [sparklines](https://en.wikipedia.org/wiki/Sparkline) as SVG in Markdown notes in paragraphs, tables and other contexts. The numeric values can be literal numbers inside code blocks or be pulled from frontmatter properties or Obsidian bases. Many examples are available in the example vault in this repository (after installing the plugin there, manually).
+This is an [Obsidian](https://obsidian.md) plugin to render inline [sparklines](https://en.wikipedia.org/wiki/Sparkline) as SVG in Markdown notes in paragraphs, tables and other contexts. The numeric values can be literal numbers inside code blocks or be pulled from frontmatter properties (bases and dataviews planned). Many examples are available in the example vault in this repository (after installing the plugin there, manually).
 
 ### Installation
 
@@ -79,6 +79,8 @@ Temperature data: `sparkline: [72, 75, 71, 68, 70] color="blue" line-width=2`
 
 Activity graph: `sparkline: [3 1 4 1 5 9 2 6] color="#ff6600" width=200`
 
+With gaps: `sparkline: [3 1 4 none 5 9 2 6] color="#ff6600" width=200`
+
 Dashed line: `sparkline: [1 2 3 4 5] dash="5,3"`
 
 Square caps: `sparkline: [1 2 3 4 5] cap=square join=bevel`
@@ -105,7 +107,24 @@ Use comma-separated numbers as text - this displays correctly in Obsidian's Prop
 | Literal                | `[1 2 3]`               | Supported |
 | Frontmatter (short)    | `[@key]`                | Supported |
 | Frontmatter (explicit) | `[@frontmatter:key]`    | Supported |
-| Bases                  | `[@bases:Table:column]` | Supported |
+| Bases                  | `[@bases:table#view:column]` | Planned   |
 | Dataview               | `[@dataview:query]`     | Planned   |
 
-These render as inline SVG graphics that scale with your text. The example vault in the repository contains many examples for sparklines inside notes with different contexts, that show numeric values from literals, frontmatter properties or bases files.
+These render as inline SVG graphics that scale with your text. The example vault in the repository contains many examples for sparklines inside notes with different contexts, that show numeric values from literals, or frontmatter properties.
+
+### Testing with the CLI Tool
+
+The repository includes a standalone CLI tool at [`src/sparkline.ts`](src/sparkline.ts) for testing sparkline generation without running Obsidian:
+
+```bash
+# Basic usage
+npx ts-node src/sparkline.ts 1 2 3 4 5
+
+# With options
+npx ts-node src/sparkline.ts 1 2 3 4 5 --width 200 --color blue --line-width 2.0
+
+# Show help
+npx ts-node src/sparkline.ts --help
+```
+
+This outputs the raw SVG string, useful for debugging or integrating into other tools.
