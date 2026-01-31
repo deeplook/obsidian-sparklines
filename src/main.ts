@@ -462,7 +462,6 @@ async function resolveBasesReference(
 
   // Determine effective sort - prioritize views sort, then top-level sort
   const effectiveSort = baseDef.viewsSort.length > 0 ? baseDef.viewsSort : baseDef.sort;
-  console.log("Sparkline: effectiveSort =", JSON.stringify(effectiveSort));
   // Find files matching the filter
   const matchingData: Array<{ sortValues: unknown[]; value: number | null; fileName: string }> = [];
 
@@ -509,10 +508,8 @@ async function resolveBasesReference(
     }
 
     matchingData.push({ sortValues, value: numValue, fileName });
-    console.log(`Sparkline: Added file ${fileName}, value: ${numValue}, sortValues:`, sortValues);
   }
 
-  console.log("Sparkline: matchingData before sort:", matchingData.map(d => ({ file: d.fileName, value: d.value })));
 
   if (matchingData.length === 0) {
     console.warn(`Sparkline: No matching data found for base "${baseName}"`);
@@ -545,7 +542,6 @@ async function resolveBasesReference(
   });
 
   const result = matchingData.map((d) => d.value);
-  console.log("Sparkline: Final result:", result);
   return result;
 }
 
