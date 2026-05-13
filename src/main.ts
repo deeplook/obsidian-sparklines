@@ -1,4 +1,4 @@
-import { App, Plugin, MarkdownPostProcessorContext, Notice, TFile } from "obsidian";
+import { App, Plugin, MarkdownPostProcessorContext, TFile } from "obsidian";
 import { SparklineOptions, generateSparklinePathData, setOption } from "./sparkline";
 import {
   ViewPlugin,
@@ -63,7 +63,7 @@ function createSparklineSvgElement(
     dashArray,
   } = options;
 
-  const svg = document.createElementNS(SVG_NS, "svg");
+  const svg = activeDocument.createElementNS(SVG_NS, "svg");
   svg.setAttribute("viewBox", `0 0 ${width} ${viewHeight}`);
   svg.setAttribute("width", String(width));
   svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
@@ -81,7 +81,7 @@ function createSparklineSvgElement(
 
   // Create path element if we have line data
   if (pathData || hasLines) {
-    const path = document.createElementNS(SVG_NS, "path");
+    const path = activeDocument.createElementNS(SVG_NS, "path");
     path.setAttribute("d", pathData);
     path.setAttribute("fill", "none");
     path.setAttribute("stroke", color);
@@ -97,7 +97,7 @@ function createSparklineSvgElement(
   // Add circles for isolated points
   const radius = Math.max(1.5, lineWidth);
   for (const point of isolatedPoints) {
-    const circle = document.createElementNS(SVG_NS, "circle");
+    const circle = activeDocument.createElementNS(SVG_NS, "circle");
     circle.setAttribute("cx", point.x.toFixed(1));
     circle.setAttribute("cy", point.y.toFixed(1));
     circle.setAttribute("r", String(radius));
@@ -383,8 +383,7 @@ function parseBaseFile(content: string): BaseDefinition | null {
     }
 
     return result;
-  } catch (e) {
-    console.error("Sparkline: Failed to parse base file", e);
+  } catch {
     return null;
   }
 }
@@ -448,7 +447,6 @@ async function resolveBasesReference(
   );
 
   if (!baseFile) {
-    console.warn(`Sparkline: Base file "${baseFileName}" not found`);
     return null;
   }
 
@@ -456,7 +454,6 @@ async function resolveBasesReference(
   const content = await app.vault.read(baseFile);
   const baseDef = parseBaseFile(content);
   if (!baseDef) {
-    console.warn(`Sparkline: Failed to parse base file "${baseFileName}"`);
     return null;
   }
 
@@ -519,7 +516,6 @@ async function resolveBasesReference(
 
 
   if (matchingData.length === 0) {
-    console.warn(`Sparkline: No matching data found for base "${baseName}"`);
     return null;
   }
 
@@ -650,9 +646,6 @@ function resolveDataReference(
   }
 
   // Unknown source
-  if (data.type === "reference") {
-    console.warn(`Sparkline: Unknown data source "${data.source}"`);
-  }
   return null;
 }
 
@@ -671,8 +664,9 @@ class SparklineWidget extends WidgetType {
   }
 
   toDOM(): HTMLElement {
-    const span = document.createElement("span");
-    span.className = this.useAccentColor ? "sparkline sparkline--accent" : "sparkline";
+    const span = createSpan({
+      cls: this.useAccentColor ? "sparkline sparkline--accent" : "sparkline"
+    });
     const svg = createSparklineSvgElement(this.numbers, this.options);
     span.appendChild(svg);
     return span;
@@ -843,8 +837,6 @@ export default class SparklinePlugin extends Plugin {
       this.app.vault.on("delete", () => clearBasesCache())
     );
 
-    // Show a notice to confirm plugin is loaded (can be removed later)
-    new Notice("Sparkline plugin loaded");
   }
 
   /**
@@ -861,9 +853,10 @@ export default class SparklinePlugin extends Plugin {
       if (!parsed) return;
 
       // Create placeholder span that will be updated when data loads
-      const span = document.createElement("span");
       const useAccentColor = !parsed.options.color;
-      span.className = useAccentColor ? "sparkline sparkline--accent" : "sparkline";
+      const span = createSpan({
+        cls: useAccentColor ? "sparkline sparkline--accent" : "sparkline"
+      });
 
       // Callback to render sparkline when data is available
       const renderSparkline = () => {

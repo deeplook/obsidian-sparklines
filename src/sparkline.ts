@@ -374,7 +374,7 @@ Examples:
   const { numbers, ...options } = parseArgs(args);
 
   if (numbers.length === 0 || numbers.every((n) => n === null)) {
-    console.error("Error: At least one numeric value is required");
+    process.stderr.write("Error: At least one numeric value is required\n");
     process.exit(1);
   }
 

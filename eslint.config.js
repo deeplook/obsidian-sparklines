@@ -11,9 +11,11 @@ export default defineConfig([
       parserOptions: { project: "./tsconfig.json" },
       globals: {
         document: "readonly",
+        activeDocument: "readonly",
         console: "readonly",
         requestAnimationFrame: "readonly",
         process: "readonly",
+        createSpan: "readonly",
       },
     },
   },
