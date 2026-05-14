@@ -1,3 +1,5 @@
+# Sparklines
+
 ## Sparklines Plugin for Obsidian
 
 [![Build](https://github.com/deeplook/obsidian-asciinema-player/actions/workflows/ci.yml/badge.svg)](https://github.com/deeplook/obsidian-sparklines/actions/workflows/ci.yml)
