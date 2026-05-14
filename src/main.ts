@@ -777,7 +777,7 @@ function createSparklineViewPlugin(app: App) {
         if (this.pendingUpdate) return;
         this.pendingUpdate = true;
         // Schedule update on next frame to batch multiple loads
-        requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
           this.pendingUpdate = false;
           this.decorations = buildDecorations(this.view, app, () =>
             this.scheduleUpdate()
