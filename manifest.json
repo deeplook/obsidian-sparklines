@@ -5,7 +5,7 @@
   "minAppVersion": "0.15.0",
   "description": "Render inline sparklines, converting code blocks to SVG.",
   "author": "Dinu Gherman",
-	"authorUrl": "https://github.com/deeplook",
-	"fundingUrl": "https://buymeacoffee.com/deeplook",
+  "authorUrl": "https://github.com/deeplook",
+  "fundingUrl": "https://buymeacoffee.com/deeplook",
   "isDesktopOnly": false
 }
