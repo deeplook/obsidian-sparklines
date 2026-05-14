@@ -1,6 +1,6 @@
 {
   "name": "sparkline",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Obsidian plugin for inline sparkline SVGs",
   "type": "module",
   "main": "main.js",

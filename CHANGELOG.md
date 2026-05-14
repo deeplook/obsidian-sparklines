@@ -4,10 +4,12 @@ All notable changes to the Sparkline Inline plugin will be documented in this fi
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-05-14
+
 - Allow for gaps in sparklines
 - Make sparkline.ts more useful in the CLI for testing
 
-## [1.0.0] - 2025-01-21
+## [1.0.0] - 2026-01-21
 
 ### Added
 - Initial release
