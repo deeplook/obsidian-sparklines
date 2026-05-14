@@ -8,6 +8,9 @@ All notable changes to the Sparkline Inline plugin will be documented in this fi
 
 - Allow for gaps in sparklines
 - Make sparkline.ts more useful in the CLI for testing
+- Add package-lock.json for reproducible builds
+- Fix manifest.json indentation inconsistency
+- Use window.requestAnimationFrame for popout window compatibility
 
 ## [1.0.0] - 2026-01-21
 
