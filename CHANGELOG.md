@@ -4,6 +4,10 @@ All notable changes to the Sparkline Inline plugin will be documented in this fi
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-05-15
+
+- Minimal changes in README.
+
 ## [1.0.1] - 2026-05-14
 
 - Allow for gaps in sparklines
