@@ -17,9 +17,11 @@
 
 This is an [Obsidian](https://obsidian.md) plugin to render inline [sparklines](https://en.wikipedia.org/wiki/Sparkline) as SVG in Markdown notes in paragraphs, tables and other contexts. The numeric values can be literal numbers inside code blocks or be pulled from frontmatter properties (bases and dataviews planned). Many examples are available in the example vault in this repository (after installing the plugin there, manually).
 
-### Installation
+### From Obsidian community plugins list
 
-This plugin has been [submitted](https://github.com/obsidianmd/obsidian-releases/pull/9694) as a community plugin, the review is pending. Until accepted you need to install it manually as described below.
+This plugin is listed on the [Obsidian Community Plugins](https://community.obsidian.md/) directory at [community.obsidian.md/plugins/sparklines](https://community.obsidian.md/plugins/sparklines) and can be installed directly from the Obsidian app: open Settings, enable community plugins if not done yet, browse community plugins, search "Sparklines", then install and enable it.
+
+### Manual Installation
 
 1. Install dependencies and build the plugin:
 
